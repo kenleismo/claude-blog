@@ -1,0 +1,82 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  body {
+    @apply bg-white text-gray-900 leading-relaxed;
+  }
+
+  /* 代码块样式 */
+  pre {
+    @apply relative rounded-lg p-4 overflow-x-auto;
+    background: #0d1117;
+  }
+
+  pre code {
+    @apply font-mono text-sm;
+  }
+
+  /* 行内代码样式 */
+  :not(pre) > code {
+    @apply bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-sm font-mono;
+  }
+
+  /* 标题样式 */
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-gray-900;
+  }
+
+  h1 { @apply text-3xl mt-8 mb-4; }
+  h2 { @apply text-2xl mt-6 mb-3; }
+  h3 { @apply text-xl mt-5 mb-2; }
+
+  /* 段落和列表间距 */
+  p { @apply mb-4 leading-7; }
+  ul, ol { @apply mb-4 pl-6; }
+  li { @apply mb-1; }
+
+  /* 链接样式 */
+  a {
+    @apply text-blue-600 hover:text-blue-800 transition-colors;
+  }
+
+  /* 引用样式 */
+  blockquote {
+    @apply border-l-4 border-gray-300 pl-4 italic text-gray-700 my-4;
+  }
+}
+
+/* 代码复制按钮样式 */
+.code-block {
+  position: relative;
+}
+
+.copy-button {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.code-block:hover .copy-button {
+  opacity: 1;
+}
+
+.copy-button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
