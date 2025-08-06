@@ -3,7 +3,7 @@ layout: ../../layouts/BlogPost.astro
 title: "ann benchmark 介绍"
 description: "介绍 ann benchmark"
 publishDate: "2025-08-06"
-tags: ["数据库内核原理", "事务", "undo"]
+tags: ["ai", "相似度查询", "benchmark"]
 ---
 
 
