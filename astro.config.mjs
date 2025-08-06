@@ -15,7 +15,7 @@ export default defineConfig({
   ],
   markdown: {
     shikiConfig: {
-      theme: 'github-dark',
+      theme: 'catppuccin-frappe',
       wrap: true,
     },
     gfm: true,

@@ -18,6 +18,11 @@ export default {
             'blockquote p:last-of-type::after': {
               content: '""',
             },
+            // 移除默认表格样式，使用自定义CSS
+            'table': {
+              marginTop: '0',
+              marginBottom: '0',
+            },
           },
         },
       },

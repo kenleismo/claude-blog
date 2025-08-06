@@ -24,23 +24,45 @@
   }
 
   /* 行内代码样式 */
-  :not(pre) > code {
+  :not(pre)>code {
     @apply bg-gray-100 text-gray-800 px-1.5 py-0.5 rounded text-sm font-mono;
   }
 
   /* 标题样式 */
-  h1, h2, h3, h4, h5, h6 {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-semibold text-gray-900;
   }
 
-  h1 { @apply text-3xl mt-8 mb-4; }
-  h2 { @apply text-2xl mt-6 mb-3; }
-  h3 { @apply text-xl mt-5 mb-2; }
+  h1 {
+    @apply text-3xl mt-8 mb-4;
+  }
+
+  h2 {
+    @apply text-2xl mt-6 mb-3;
+  }
+
+  h3 {
+    @apply text-xl mt-5 mb-2;
+  }
 
   /* 段落和列表间距 */
-  p { @apply mb-4 leading-7; }
-  ul, ol { @apply mb-4 pl-6; }
-  li { @apply mb-1; }
+  p {
+    @apply mb-4 leading-7;
+  }
+
+  ul,
+  ol {
+    @apply mb-4 pl-6;
+  }
+
+  li {
+    @apply mb-1;
+  }
 
   /* 链接样式 */
   a {
@@ -50,6 +72,123 @@
   /* 引用样式 */
   blockquote {
     @apply border-l-4 border-gray-300 pl-4 italic text-gray-700 my-4;
+  }
+
+  /* 表格样式 - 紧凑设计 */
+  table {
+    width: 100%;
+    margin: 1.25rem 0;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+  }
+
+  table th,
+  table td {
+    border: 1px solid #d1d5db;
+    padding: 0.5rem;
+    text-align: left;
+  }
+
+  table th {
+    background-color: #f9fafb;
+    font-weight: 600;
+    color: #374151;
+  }
+
+  table td {
+    background-color: #ffffff;
+  }
+
+  table tr:nth-child(even) td {
+    background-color: #f9fafb;
+  }
+
+  /* 针对博客内容的表格样式 - 紧凑版本 */
+  article.prose .blog-content table,
+  .prose.prose-lg table,
+  .blog-content table {
+    width: 100% !important;
+    margin: 1.25rem 0 !important;
+    border-collapse: collapse !important;
+    font-size: 0.85rem !important;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1) !important;
+    border-radius: 0.375rem !important;
+    overflow: hidden !important;
+    display: table !important;
+  }
+
+  article.prose .blog-content table th,
+  article.prose .blog-content table td,
+  .prose.prose-lg table th,
+  .prose.prose-lg table td,
+  .blog-content table th,
+  .blog-content table td {
+    border: 1px solid #e5e7eb !important;
+    padding: 0.5rem 0.625rem !important;
+    text-align: left !important;
+    vertical-align: top !important;
+    display: table-cell !important;
+    line-height: 1.4 !important;
+  }
+
+  article.prose .blog-content table th,
+  .prose.prose-lg table th,
+  .blog-content table th {
+    background-color: #f3f4f6 !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    font-size: 0.8rem !important;
+    padding: 0.5rem 0.625rem !important;
+  }
+
+  article.prose .blog-content table td,
+  .prose.prose-lg table td,
+  .blog-content table td {
+    background-color: #ffffff !important;
+    color: #6b7280 !important;
+  }
+
+  article.prose .blog-content table tbody tr:nth-child(even) td,
+  .prose.prose-lg table tbody tr:nth-child(even) td,
+  .blog-content table tbody tr:nth-child(even) td {
+    background-color: #f9fafb !important;
+  }
+
+  article.prose .blog-content table tbody tr:hover td,
+  .prose.prose-lg table tbody tr:hover td,
+  .blog-content table tbody tr:hover td {
+    background-color: #f0f9ff !important;
+  }
+
+  /* 针对prose容器内的表格 */
+  .prose table {
+    width: 100% !important;
+    margin: 1.25rem 0 !important;
+    border-collapse: collapse !important;
+    font-size: 0.85rem !important;
+  }
+
+  .prose table th,
+  .prose table td {
+    border: 1px solid #d1d5db !important;
+    padding: 0.5rem !important;
+    text-align: left !important;
+    line-height: 1.4 !important;
+  }
+
+  .prose table th {
+    background-color: #f9fafb !important;
+    font-weight: 600 !important;
+    color: #374151 !important;
+    font-size: 0.8rem !important;
+  }
+
+  .prose table td {
+    background-color: #ffffff !important;
+  }
+
+  .prose table tr:nth-child(even) td {
+    background-color: #f9fafb !important;
   }
 }
 
