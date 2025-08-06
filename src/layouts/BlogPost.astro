@@ -8,8 +8,43 @@ export interface Props {
   tags?: string[];
 }
 
-const { title, description, publishDate, tags = [] } = Astro.props;
-const formattedDate = new Date(publishDate).toLocaleDateString('zh-CN');
+// 在 Astro 中，Markdown 文件的 frontmatter 通过 Astro.props.frontmatter 传递
+const frontmatter = Astro.props.frontmatter || Astro.props;
+const { title, description, publishDate, tags = [] } = frontmatter;
+
+// 更健壮的日期处理
+function formatDate(dateString) {
+  // 检查输入是否有效
+  if (!dateString || typeof dateString !== 'string') {
+    return '日期未知';
+  }
+  
+  // 首先尝试手动解析 YYYY-MM-DD 格式，这样更可靠
+  const match = dateString.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const [, year, month, day] = match;
+    return `${year}年${parseInt(month)}月${parseInt(day)}日`;
+  }
+  
+  // 如果不是标准格式，尝试使用 Date 对象
+  try {
+    const date = new Date(dateString);
+    if (!isNaN(date.getTime())) {
+      return date.toLocaleDateString('zh-CN', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    }
+  } catch (error) {
+    // 忽略错误
+  }
+  
+  // 最后回退到原始字符串
+  return dateString;
+}
+
+const formattedDate = formatDate(publishDate);
 ---
 
 <BaseLayout title={title} description={description}>
