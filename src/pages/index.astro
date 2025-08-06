@@ -21,16 +21,16 @@ const postsByYear = sortedPosts.reduce((acc, post) => {
 const years = Object.keys(postsByYear).sort((a, b) => b - a);
 ---
 
-<BaseLayout title="Tech Notes - 数据库内核技术博客">
+<BaseLayout title="Tech Notes - 技术博客">
   <div class="mb-12">
     <h1 class="text-3xl font-bold text-gray-900 mb-2">技术博客</h1>
-    <p class="text-gray-600">记录数据库内核开发的点点滴滴</p>
+    <p class="text-gray-600"></p>
   </div>
 
   {years.map((year) => (
     <section class="mb-12">
       <h2 class="text-2xl font-semibold text-gray-800 mb-6">{year}</h2>
-      
+
       <div class="space-y-6">
         {postsByYear[year].map((post) => {
           const date = new Date(post.frontmatter.publishDate);
@@ -38,7 +38,7 @@ const years = Object.keys(postsByYear).sort((a, b) => b - a);
             month: '2-digit',
             day: '2-digit'
           });
-          
+
           return (
             <article class="group">
               <div class="flex items-baseline gap-4">
@@ -47,22 +47,13 @@ const years = Object.keys(postsByYear).sort((a, b) => b - a);
                 </time>
                 <div class="flex-1">
                   <h3>
-                    <a 
+                    <a
                       href={post.url}
                       class="text-gray-900 hover:text-blue-600 transition-colors group-hover:text-blue-600"
                     >
                       {post.frontmatter.title}
                     </a>
                   </h3>
-                  {post.frontmatter.tags && post.frontmatter.tags.length > 0 && (
-                    <div class="flex flex-wrap gap-2 mt-2">
-                      {post.frontmatter.tags.map((tag) => (
-                        <span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
                 </div>
               </div>
             </article>
