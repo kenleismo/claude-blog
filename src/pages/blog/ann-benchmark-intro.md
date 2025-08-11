@@ -136,8 +136,10 @@ ann benchmark 使用 _generate_combinations 来生成参数组合：
 - fit：加载数据，对于 faiss 来说就是 faiss_add
 - query: 相似度搜索，一次执行一个查询
 - batch_query: 可选，批量执行 query 的方法，如果算法没有实现，默认会使用 ThreadPool 并发调用 query
+- get_memory_usage： 用于计算索引所占用的内存空间，在构建索引前后分别调用，计算差值。默认实现是返回进程当前所占的内存空间。
 - get_batch_results： 可选，批量执行时返回最终的结果
 - set_query_arguments：设置查询参数，将 config.yml 中的 query_args 传递给算法
+- `__str__`：默认实现为返回算法的名称，网页上的图表中线上的点会显示此接口的返回值，所以需要有一定区分度
 
 ## annb 的性能评价指标
 
