@@ -92,7 +92,6 @@ ann benchmark 使用 _generate_combinations 来生成参数组合：
   - 返回: `[[1, 3], [1, 4], [2, 3], [2, 4]]`
 
 2. 对于字典输入：生成所有键值对组合的字典
-
 - `_generate_combinations({'a': [1, 2], 'b': 3})`
   - 返回: `[{'a': 1, 'b': 3}, {'a': 2, 'b': 3}]`
 - `_generate_combinations({'x': [1, 2], 'y': [3, 4]})`
@@ -100,26 +99,36 @@ ann benchmark 使用 _generate_combinations 来生成参数组合：
 
 
 ## ann benchmark 的运行流程
-1.处理数据集
 
-从 https://ann-benchmarks.com/{dataset_name}.hdf5 下载数据集到 data 目录下，下载的数据集是 hdf5 格式的文件，包含训练和测试两部分数据，数据集中也包含了向量的维度，距离度量方式。第一次会下载数据，时间依赖网速。下载完成后，后续就无需下载。我们也可以手动下载好数据集放到 data 目录下
+1. 处理数据集
 
-2.创建 definitions
+    从 https://ann-benchmarks.com/{dataset_name}.hdf5 下载数据集到 data 目录下，下载的数据集是 hdf5 格式的文件，包含训练和测试两部分数据，数据集中也包含了向量的维度，距离度量方式。第一次会下载数据，时间依赖网速。下载完成后，后续就无需下载。我们也可以手动下载好数据集放到 data 目录下
 
-definition 是测试的最小单元，一个算法可以在 config.yml 中定义若干 definition。程序会读取所有的算法的配置文件（config.yml)，根据数据集的 point_type 和 distance_metric 得到一个最大的 definitions 的集合。程序会根据用户指定的参数，如 `--algorithm`，`--local`，`--force`等，config.yml 是否禁用等信息对这个最大集合进行过滤，最终获得本次运行所要测试的 definition 集合。
+2. 创建 definitions
 
-3.启动若干 worker （由 parallelism 指定），每一个worker负责一个 definition，具体每个worker做的事情如下：
+    definition 是测试的最小单元，一个算法可以在 config.yml 中定义若干 definition。程序会读取所有的算法的配置文件（config.yml)，根据数据集的 point_type 和 distance_metric 得到一个最大的 definitions 的集合。程序会根据用户指定的参数，如 `--algorithm`，`--local`，`--force`等，config.yml 是否禁用等信息对这个最大集合进行过滤，最终获得本次运行所要测试的 definition 集合。
 
-1. 根据 definition 初始化算法对象
+3. 启动若干 worker （由 parallelism 指定），每一个worker负责一个 definition，具体每个 worker 做的事情如下：
 
-2. 调用算法的 fit 接口，创建索引，并将数据加载到索引中
+    1. `instantiate_algorithm`: 根据 definition 初始化算法对象
 
-3. 每个 definition 运行 run_count（-k 参数指定） 次
+    2. `load_and_transform_dataset`: 将数据集分为训练集和测试集
 
-4. 根据 --batch 参数决定运行 single_query 或 batch_query
+    3. `build_index`: 调用算法的 `fit` 接口，创建索引，并将训练集加载到索引中。过程中会统计时间和内存消耗
 
-无论是 single 还是 batch，annb 都允许算法实现 prepare 模式，正常情况下 single_query 会调用 query 接口， batch_query 会调用  batch_query 接口。如果算法实现了prepare 机制，single_query 会先调用 prepare_query，然后调用 run_prepared_query 接口，batch_query 则会调用 prepare_batch_query 和 run_batch_query。annb 会优先使用 prepare 模式。
-  single_query 会将查询一个个发送给算法，batch_query 会将查询矩阵发送给算法。
+    4. 对于 definition 中的每一个 `query_args`，运行 `run_individual_query` 和 `store_results` （将结果写回 h5py 文件中）
+
+        - 每组 query arg 运行run_count（-k 参数指定） 次，每一次都会运行 single_query 或 batch_query
+
+        - 根据 --batch 参数决定运行 single_query 或 batch_query
+          - 正常情况下 single_query 会调用 `query` 接口， batch_query 会调用  `batch_query` 接口。对于 batch 模式，算法还需要实现 `get_batch_results` 用于返回最终的执行结果
+          - 无论是 single 还是 batch，annb 都允许算法实现 prepare 模式，当算法支持 prepare 模式时，annb 会优先使用 prepare 模式：single_query 会先调用 `prepare_query`，然后调用 `run_prepared_query` 接口；batch_query 则会调用 `prepare_batch_query` 和 `run_batch_query`
+          - single_query 会将查询向量一个个发送给算法，而 batch_query 会将所有的查询向量一次性发送给算法
+
+        - 记录执行结果
+
+        最终会为每一组查询记录：查询所花费的时间，查询向量k个近似邻的 id，k个近似邻与查询向量之间的真实距离
+
 
 ## 自定义算法
 
@@ -127,8 +136,20 @@ definition 是测试的最小单元，一个算法可以在 config.yml 中定义
 - fit：加载数据，对于 faiss 来说就是 faiss_add
 - query: 相似度搜索，一次执行一个查询
 - batch_query: 可选，批量执行 query 的方法，如果算法没有实现，默认会使用 ThreadPool 并发调用 query
+- get_batch_results： 可选，批量执行时返回最终的结果
 - set_query_arguments：设置查询参数，将 config.yml 中的 query_args 传递给算法
 
-## annb 的性能评价体系
+## annb 的性能评价指标
 
-TODO
+在完成 annb 测试之后，可以使用 `python create_website.py` 来创建和[官方](https://ann-benchmarks.com/index.html)类似的网站。
+
+
+annb 中比较重要的几个性能评价指标：
+
+- Recall: 召回率，评价算法执行地准确性
+
+    运行 annb，我们会得到 k 个近似邻。计算 Recall，就是要比较算法返回的 k 个近似邻是否真的是查询向量的 k 个距离最近的邻居。在数据集中会保存每个查询向量的前100个相似邻以及它们与查询向量的距离，这100个向量是准确的。比如 k = 10，那么我们从数据集中能够获得查询向量的第10个最近的向量的距离，如 0.21091，那么 recall = 算法返回的10个近似邻中距离小于 0.21091 的个数 / 10;
+
+- Queries per second： 每秒钟执行的查询的数目，评价算法执行地效率
+- Build time：索引构建的时间，评价索引构建地效率
+- Index size (kB)：索引占用内存的大小
