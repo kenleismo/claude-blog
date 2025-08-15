@@ -155,3 +155,47 @@ annb 中比较重要的几个性能评价指标：
 - Queries per second： 每秒钟执行的查询的数目，评价算法执行地效率
 - Build time：索引构建的时间，评价索引构建地效率
 - Index size (kB)：索引占用内存的大小
+
+### Pareto frontier
+
+在使用 `create_website` 生成网页时，我发现并非所有的测试数据都能够在最终的图表中显示出来。这是因为，annb 使用 `Pareto frontier` 对数据进行过滤。
+
+`Pareto frontier` 的代码如下：
+
+```py
+def create_pointset(data, xn, yn):
+    # 假设 x 坐标是召回率，y 坐标是 qps
+    xm, ym = (metrics[xn], metrics[yn])
+    # ["worst"] 小于0，表示值越大，优先级越高; 大于等于0，表示值越小，优先级越高
+    # recall 和 qps 的 ["worst"] 都是 -inf
+    rev_y = -1 if ym["worst"] < 0 else 1
+    rev_x = -1 if xm["worst"] < 0 else 1
+    # 按优先级排序, recall 和 qps 都是越高越好，即：
+    # 先按 qps 排，qps 越高越靠前，qps 相同按 recall 排，recall 越高越靠前
+    data.sort(key=lambda t: (rev_y * t[-1], rev_x * t[-2]))
+
+    axs, ays, als = [], [], []
+    # Generate Pareto frontier
+    xs, ys, ls = [], [], []
+    last_x = xm["worst"]
+    # 初始 recall "worst" 为 -inf，所以 recall 的比较器 `xv > lx`
+    comparator = (lambda xv, lx: xv > lx) if last_x < 0 else (lambda xv, lx: xv < lx)
+    # 顺序访问排好顺的data, xv 就是召回率，yv 就是 qps
+    for algo, algo_name, xv, yv in data:
+        if not xv or not yv:
+            continue
+        axs.append(xv)
+        ays.append(yv)
+        als.append(algo_name)
+        # 当遇到新的数据点时，它的qps一定是不大于之前遇到的数据点的
+        # 如果它的 recall 还不是最大的，这个数据点就没有必要要了。
+        # 因为之前有一个”前沿“点，比它的 qps 更高，比它的 recall 还要高
+        if comparator(xv, last_x):
+            last_x = xv
+            xs.append(xv)
+            ys.append(yv)
+            ls.append(algo_name)
+    return xs, ys, ls, axs, ays, als
+```
+
+正是因为这段代码，导致了有一些非最优的数据点不会出现的最终生成的图表上。`create_website` 提供 `--scatter` 参数，可以生成散点图展示所有的数据点。不过散点图的视觉效果很差。
