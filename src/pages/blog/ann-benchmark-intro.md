@@ -68,7 +68,7 @@ ann benchmark 支持 docker 和 local 两种模式：
 
 2. 创建 definitions
 
-    definition 是测试的最小单元，一个算法可以在 config.yml 中定义若干 definition。程序会读取所有的算法的配置文件（config.yml)，根据数据集的 point_type 和 distance_metric 得到一个最大的 definitions 的集合。程序会根据用户指定的参数，如 `--algorithm`，`--local`，`--force`等，config.yml 是否禁用等信息对这个最大集合进行过滤，最终获得本次运行所要测试的 definition 集合。
+    definition 是测试的最小单元，一个算法可以在 config.yml 中定义若干 definition。程序会读取所有的算法的配置文件（config.yml），根据数据集的 point_type 和 distance_metric 得到一个最大的 definitions 的集合。程序会根据用户指定的参数，如 `--algorithm`，`--local`，`--force`等，config.yml 是否禁用等信息对这个最大集合进行过滤，最终获得本次运行所要测试的 definition 集合。
 
 3. 启动若干 worker （由 parallelism 指定），每一个worker负责一个 definition，具体每个 worker 做的事情如下：
 
@@ -78,7 +78,7 @@ ann benchmark 支持 docker 和 local 两种模式：
 
     3. `build_index`: 调用算法的 `fit` 接口，创建索引，并将训练集加载到索引中。过程中会统计时间和内存消耗
 
-    4. 对于 definition 中的每一个 `query_args`，运行 `run_individual_query` 和 `store_results` （将结果写回 h5py 文件中）
+    4. 对于 definition 中的每一个 `query_args`，运行 `run_individual_query`
 
         - 每组 query arg 运行run_count（-k 参数指定） 次，每一次都会运行 single_query 或 batch_query
 
@@ -89,7 +89,12 @@ ann benchmark 支持 docker 和 local 两种模式：
 
         - 记录执行结果
 
-        最终会为每一组查询记录：查询所花费的时间，查询向量k个近似邻的 id，k个近似邻与查询向量之间的真实距离
+          最终会为每一组查询记录：查询所花费的时间，查询向量k个近似邻的 id，k个近似邻与查询向量之间的真实距离
+
+    5. `store_results`：将结果写回 h5py 文件中
+
+        最终的结果文件包含三个属性：time，neighbors，distances。time 记录每个查询向量的搜索时间，neighbors 和 distances 都是二维数组，记录每个查询向量对应的 n 个近似邻居的 id 和实际距离。
+
 
 
 
@@ -261,7 +266,7 @@ ANN benchmark 的扩展性非常好，可以很轻松地添加新的算法。对
 - query: 相似度搜索，一次执行一个查询
 - batch_query: 可选，批量执行 query 的方法，如果算法没有实现，默认会使用 ThreadPool 并发调用 query
 - get_memory_usage： 用于计算索引所占用的内存空间，在构建索引前后分别调用，计算差值。默认实现是返回进程当前所占的内存空间。
-- get_batch_results： 可选，批量执行时返回最终的结果
+- get_batch_results： 可选，批量执行时返回最终的结果，实现 get_batch_results 需要保证结果集与测试集一一对应
 - set_query_arguments：设置查询参数，将 config.yml 中的 query_args 传递给算法
 - `__str__`：默认实现为返回算法的名称，网页上的图表中线上的点会显示此接口的返回值，所以需要有一定区分度
 

@@ -302,13 +302,71 @@ void UndoLogEntry::RollbackUndoEntry() {
 
 ## undo 日志回收
 
-某个事务对所有事务都可见的时候，它的所有的 undo 日志就可以被回收。
+什么样的 undo 日志可以被回收呢？简单来说：
+当某个事务对所有事务都可见的时候，它的所有的 undo 日志就可以被回收。
 
-TODO 详细说明 TransactionSTSWithLock 和 TransactionCTSWithLock 的工作机制。
+过程如下：
+1. 事务完成后，会将 undo 日志保存到完成事务列表中
+2. GC 线程通过遍历活跃事务列表，找出最早开始的事务，将其 sts 记为 `global_min_sts`，
+3. 遍历以完成事务列表，找到所有的 cts 小于 global_min_sts 的事务的 undo 日志
+4. 释放 undo 日志内存，对于 insert undo，还需要将对应的 insert mapping table 置空
 
 
-GC 线程会计算全局最小的 sts（global_min_sts），计算 global_min_sts 会遍历活跃事务列表，找出最早开始的事务，将其 sts 记为 global_min_sts。
+下面是具体代码细节分析：
 
+在事务提交或者回滚的时候，会调用 `GCTransaction` 将 undo 日志交给 GC 线程。`GCTransaction` 如下所示：
+
+```c++
+  void GCTransaction(const cid_t unique_id, const cid_t sts,
+                     std::vector<std::unique_ptr<kmemstore::mvcc::UndoLogEntry>> undo_log_list) const {
+    active_txn_map_array_[txnIDMod(unique_id)]->remove_txn_from_queue(sts, std::move(undo_log_list));
+  }
+```
+
+活跃事务列表对应的数据结构是 `TransactionSTSWithLock`，它的内部用一个队列保存 sts，如下所示：
+
+```c++
+class TransactionSTSWithLock {
+  TransactionCTSWithLock &cts_min_heap;
+  std::unordered_map<cid_t, std::vector<std::unique_ptr<kmemstore::mvcc::UndoLogEntry>>> deleted_txn_cache;
+ // 按 sts 排序的 txn_id 队列
+  std::queue<cid_t> sts_queue;
+  mutable std::mutex sts_queue_mutex;
+}
+```
+
+`TransactionSTSWithLock` 的 `remove_txn_from_queue` 能够保证按照 sts 的顺序将 undo 日志交给回收线程：如果一个事务并非这个分桶内最早的事务，那么它的 undo 日志
+会被保存在 deleted_txn_cache 中，直到所有早于它事务都完成之后，它的 undo 日志才会交给 gc 线程。
+
+这个行为导致”活跃事务“的含义稍微发生了一点改变：一个事务结束后还会保留在活跃事务列表中，直到与它同一个分桶的其他事务都完成。
+
+当一个事务”真正地”结束后，我们会从 `sts_queue` 中将其移除，并将 undo 日志保存到 `TransactionCTSWithLock` 中（一个 `TransactionSTSWithLock` 对应一个 `TransactionCTSWithLock`）。
+
+`TransactionCTSWithLock` 内部采用优先级队列维护所有已完成事务的 undo 列表，如下所示：
+
+```c++
+class TransactionCTSWithLock {
+  using Item = UndoList;
+
+ private:
+  std::priority_queue<Item, std::vector<Item>, CTSComparator> cts_min_heap;
+  std::mutex cts_heap_mutex;
+}
+```
+
+使用 priority_queue 是为了更方便地找出小于 `global_min_sts` 的事务的 undo。
+
+
+GC 线程会计算全局最小的 sts（global_min_sts），计算 global_min_sts 会遍历活跃事务列表，找出最早开始的事务，将其 sts 记为 global_min_sts，过程如下；
+
+```c++
+  for (const auto &arr : active_txn_map_array_) {
+    minSts = std::min(minSts, arr->minTs());
+  }
+  global_min_sts = minSts;
+```
+
+拿到 global_min_sts 之后，会将遍历完成事务列表，收集可以会被回收的 undo list，启动 `FreeTxnCtxWorker` 任务进行回收处理。
 ```c++
     for (size_t i = 0; i < finished_txn_map_array_.size(); ++i) {
       auto &gc_txn_list = finished_txn_map_array_[i]->remove_txn_from_min_heap(global_min_sts);
@@ -318,3 +376,5 @@ GC 线程会计算全局最小的 sts（global_min_sts），计算 global_min_st
       gc_txn_list.clear();
     }
 ```
+
+`FreeTxnCtxWorker` 中的主要逻辑是为了处理 insert undo 日志，找到它在 insert mapping table 中的位置，并将该位置的指针置为空。
