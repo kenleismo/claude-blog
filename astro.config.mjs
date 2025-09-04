@@ -4,8 +4,7 @@ import sitemap from '@astrojs/sitemap';
 import tailwind from '@astrojs/tailwind';
 
 export default defineConfig({
-  site: 'https://kens1g.github.io',
-  base: '/claude-blog',
+  site: 'https://kenleismo.github.io',
   integrations: [
     mdx(),
     sitemap(),
