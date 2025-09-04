@@ -2,7 +2,7 @@
 layout: ../../layouts/BlogPost.astro
 title: "理解 go 的 syncMap"
 description: "介绍 go 的 syncMap 实现原理"
-publishDate: 2023-07-17
+publishDate: "2023-07-17"
 tags: ["go", "hashmap", "threads"]
 ---
 
