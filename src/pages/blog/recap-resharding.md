@@ -11,7 +11,7 @@ tags: ["database", "resharding", "mysql"]
 [Vitess](https://github.com/vitessio/vitess) 是基于 mysql 的中间件，管理大规模 mysql 集群。
 因为工作的原因，在多年以前，研究过它的水平扩缩容方案。去年组里重构了这块，我便又将当时看得内容回顾了一遍，在此简单的记录一下。
 
-本文对应的代码版本：[24c74fcf2cdbca18327a41122fec36fa2ce68fac](https://github.com/vitessio/vitess/tree/24c74fcf2cdbca18327a41122fec36fa2ce68fac)
+本文对应的代码版本：[点我看上古版本](https://github.com/vitessio/vitess/tree/24c74fcf2cdbca18327a41122fec36fa2ce68fac)
 
 
 ### Vitess 架构简述
