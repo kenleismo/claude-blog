@@ -1,6 +1,7 @@
 ---
 layout: ../../layouts/BlogPost.astro
 title: 'Vitess Resharding in Early Days'
+description: "回忆以前看过的 vitess 扩缩容的代码"
 publishDate: "2024-04-07"
 tags: ["database", "resharding", "mysql"]
 ---
@@ -19,9 +20,9 @@ vitess 架构不是本文的重点，但为了行文的完整性，本节向读�
 
 此处借用 [vitess.io](https://vitess.io) 上的架构图：
 
-![Vitess Architecture](../assets/vitess_architecture.svg)
+![Vitess Architecture](../assets/images/vitess_architecture.svg)
 
-- vtgate：gate 是 vitess 对外提供服务的接口，支持 grpc 协议和 mysql 协议，用户可以像使用 
+- vtgate：gate 是 vitess 对外提供服务的接口，支持 grpc 协议和 mysql 协议，用户可以像使用
 mysql 一样，使用 mysql 客户端连上 gate，执行 sql
 
 - vttablet：vttablet 与 mysql 实例是一对一的关系，通常部署在同一个节点，vttablet 和 mysql
@@ -44,14 +45,14 @@ shard 是一个逻辑概念，每个 shard 中有若干个 vttablet。
 
 - shard key: 分片键
 
-- keyspace：可以认为是 vitess 的逻辑数据库。一个 keyspace 可以包含若干 shard，数据 hash 
+- keyspace：可以认为是 vitess 的逻辑数据库。一个 keyspace 可以包含若干 shard，数据 hash
 分布在所有的 shard 上
 
 ## 步骤
 
 ### 准备
 
-vitess 的水平扩容需要准备新的节点，并在新的节点上启动新的 shards，新 shards 和老 shards 
+vitess 的水平扩容需要准备新的节点，并在新的节点上启动新的 shards，新 shards 和老 shards
 属于同一个 keyspace，新启动的 shards 处于未服务的状态。老的 shards 代表的是整个 keyspace，
 新的 shards 也代表了整个 keyspace，扩容就是将数据从老的 shards（source），迁移
 到新的 shards（dest）上，并将服务也迁移过来的过程。
@@ -61,7 +62,7 @@ vitess 的水平扩容需要准备新的节点，并在新的节点上启动新�
 假设我们已经存在一个单节点的 vitess 集群，其仅包含一个 shard0，现准备扩容到双节点，
 那么我们就需要额外部署一个包含两个 shard 的同名 keyspace。
 
-vitess 需要手动指定每一张表的 shard key，一扩二的之前需要通过 `ApplyVSchema` 命令为 source 
+vitess 需要手动指定每一张表的 shard key，一扩二的之前需要通过 `ApplyVSchema` 命令为 source
 集群中的每一张表指定 shard key。
 
 
@@ -90,7 +91,7 @@ vitess 需要手动指定每一张表的 shard key，一扩二的之前需要通
 
 下图所示展示的是一扩二的全量同步的过程：
 
-![Copy Data](../assets/resharding_copy_data.png)
+![Copy Data](../assets/images/resharding_copy_data.png)
 
 1. 对于每个 source shard：
     - 随机找到其一个 healthy rdonly 副本，使用 `stop slave` 停其流水
@@ -137,7 +138,7 @@ CREATE TABLE IF NOT EXISTS _vt.blp_checkpoint (
 ) ENGINE=InnoDB;
 ```
 
-然后使用 `show slave status` 查询 source rdonly 的 `Executed_Gtid_Set`，`Seconds_Behind_Master` 等 
+然后使用 `show slave status` 查询 source rdonly 的 `Executed_Gtid_Set`，`Seconds_Behind_Master` 等
 流水信息，并将这些信息记录在 `blp_checkpoint` 表中。换句话说，blp checkpoint 此时记录就是全量同步的起始点。
 
 注意：
@@ -165,7 +166,7 @@ tablet 之间的流水同步也被称作 filtered replication。
 
 下图展示的是增量同步的步骤：
 
-![Filterd Replication](../assets/filterd_replication.png)
+![Filterd Replication](../assets/images/filterd_replication.png)
 
 1. dest primary 接收到 RefreshState 后，启动 binlog player
 2. binlog player 从 `blp_checkpoint` 中读取 start pos
@@ -190,7 +191,7 @@ diff 的流程比较简单，我们重点回顾一下 vitess 是如何让两个 
 
 synchronizeReplication 的步骤如下图所示：
 
-![Sync Replication](../assets/sync_replication.png)
+![Sync Replication](../assets/images/sync_replication.png)
 
 1. 调用 `StopBlp` 停止 dest primary 上的 binlog player
 
@@ -229,8 +230,8 @@ synchronizeReplication 的步骤如下图所示：
     重启 dest primary 的 binlog player，再我们比较数据的时候，dest 和 source 之间的增量
     数据仍在同步。
 
-经过这 5 个步骤，可以得到两个停掉流水的 rdonly 节点，这两个 rdonly 节点分别属于 source 和 
-dest 集群，并且停在了同一 binlog position，因此它们的数据应当是一致的。接下来我们就会对比这两个 
+经过这 5 个步骤，可以得到两个停掉流水的 rdonly 节点，这两个 rdonly 节点分别属于 source 和
+dest 集群，并且停在了同一 binlog position，因此它们的数据应当是一致的。接下来我们就会对比这两个
 rdonly 之间的数据，来验证全量同步和增量同步的准确性。
 
 完成数据的校验工作后，我们需要执行 `START SLAVE` 将两个 rdonly 放回的各自的复制组中去。
