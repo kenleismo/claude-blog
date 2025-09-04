@@ -1,7 +1,7 @@
 ---
 layout: ../../layouts/BlogPost.astro
 title: 'Vitess Resharding in Early Days'
-publishDate: 2024-04-07
+publishDate: "2024-04-07"
 tags: ["database", "resharding", "mysql"]
 ---
 
