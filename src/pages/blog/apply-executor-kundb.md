@@ -13,7 +13,7 @@ apply 算子用于计算关联子查询，其来源于微软 SIGMOD 2001 的[论
 论文给出了 Apply 的定义：
 
 $$
-R\; A^\otimes \; E=\bigcup_{r \in R} (\{ r \} \, \otimes E(r) )
+R \ A^\otimes \  E=\bigcup_{r \in R} (\{ r \} \, \otimes E(r) )
 $$
 
 > Apply takes a relational input R and a parameterized expression
